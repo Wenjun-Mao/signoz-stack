@@ -10,6 +10,23 @@ docker compose -p signoz -f docker/compose.yaml up -d --remove-orphans
 
 Open UI at **http://localhost:8080**
 
+## Restricted Network Setup (No GitHub Access)
+
+If the host cannot reach GitHub (common in restricted networks), pre-seed the ClickHouse init binary tarball locally.
+
+1. Download the correct archive on any machine with internet:
+   - `histogram-quantile_linux_amd64.tar.gz` for `x86_64/amd64`
+   - `histogram-quantile_linux_arm64.tar.gz` for `aarch64/arm64`
+2. Copy and rename it on the SigNoz host to:
+   - `common/clickhouse/user_scripts/histogram-quantile.tar.gz`
+3. Start stack:
+   - `docker compose -p signoz -f docker/compose.yaml up -d --remove-orphans`
+4. Verify init succeeded:
+   - `docker logs signoz-init-clickhouse --tail 100`
+   - `docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"`
+
+Optional: if you have an accessible mirror URL, set `HISTOGRAM_QUANTILE_URL` in `docker/.env` to override the default GitHub download URL.
+
 ## Published ports
 
 | Port  | Protocol   | Purpose                          |

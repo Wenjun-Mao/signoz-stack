@@ -93,11 +93,21 @@ services:
         version="v0.0.1"
         node_os=$$(uname -s | tr '[:upper:]' '[:lower:]')
         node_arch=$$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
-        echo "Fetching histogram-binary for $${node_os}/$${node_arch}"
+        archive_name="histogram-quantile_$${node_os}_$${node_arch}.tar.gz"
+        default_url="https://github.com/SigNoz/signoz/releases/download/histogram-quantile%2F$${version}/$${archive_name}"
+        download_url="$${HISTOGRAM_QUANTILE_URL:-$${default_url}}"
+        local_archive="/var/lib/clickhouse/user_scripts/histogram-quantile.tar.gz"
+        echo "Preparing histogram-binary for $${node_os}/$${node_arch}"
         cd /tmp
-        wget -O histogram-quantile.tar.gz "https://github.com/SigNoz/signoz/releases/download/histogram-quantile%2F$${version}/histogram-quantile_$${node_os}_$${node_arch}.tar.gz"
+        if [ -f "$${local_archive}" ]; then
+          echo "Using local archive: $${local_archive}"
+          cp "$${local_archive}" histogram-quantile.tar.gz
+        else
+          echo "Downloading from: $${download_url}"
+          wget --tries=5 --timeout=20 -O histogram-quantile.tar.gz "$${download_url}"
+        fi
         tar -xvzf histogram-quantile.tar.gz
-        mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
+        install -m 0755 histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
     restart: on-failure
     volumes:
       - ../common/clickhouse/user_scripts:/var/lib/clickhouse/user_scripts/
